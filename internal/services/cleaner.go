@@ -397,3 +397,146 @@ func (s *CleanerService) GetApprovedCleaners(limit, offset int, search string) (
 func (s *CleanerService) GetCleaners(limit, offset int, status *string, search *string) ([]*models.Cleaner, error) {
 	return s.cleanerRepo.GetCleaners(limit, offset, status, search)
 }
+
+// GetCleanerStats returns statistics for a specific cleaner (admin only)
+func (s *CleanerService) GetCleanerStats(cleanerID string) (*models.CleanerStats, error) {
+	cleaner, err := s.cleanerRepo.GetByID(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner: %w", err)
+	}
+	if cleaner == nil {
+		return nil, fmt.Errorf("cleaner not found")
+	}
+
+	// Get booking statistics from repository
+	stats, err := s.cleanerRepo.GetCleanerStats(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner stats: %w", err)
+	}
+
+	return stats, nil
+}
+
+// SuspendCleaner suspends a cleaner profile (admin only)
+func (s *CleanerService) SuspendCleaner(cleanerID, adminID, reason string) (*models.Cleaner, error) {
+	cleaner, err := s.cleanerRepo.GetByID(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner: %w", err)
+	}
+	if cleaner == nil {
+		return nil, fmt.Errorf("cleaner not found")
+	}
+
+	cleaner.IsActive = false
+	cleaner.IsAvailable = false
+	cleaner.RejectedReason = sql.NullString{String: reason, Valid: true}
+
+	if err := s.cleanerRepo.Update(cleaner); err != nil {
+		return nil, fmt.Errorf("failed to suspend cleaner: %w", err)
+	}
+
+	// TODO: Send suspension email to cleaner (async)
+	// go func() {
+	// 	ctx := context.Background()
+	// 	user, err := s.userRepo.GetByID(cleaner.UserID)
+	// 	if err == nil && user != nil && user.Email.Valid {
+	// 		cleanerName := "Cleaner"
+	// 		if user.FirstName.Valid {
+	// 			cleanerName = user.FirstName.String
+	// 		}
+
+	// 		_ = s.emailService.SendCleanerSuspendedEmail(
+	// 			ctx,
+	// 			user.Email.String,
+	// 			cleanerName,
+	// 			reason,
+	// 		)
+	// 	}
+	// }()
+
+	return cleaner, nil
+}
+
+// ActivateCleaner activates a previously suspended cleaner (admin only)
+func (s *CleanerService) ActivateCleaner(cleanerID, adminID string) (*models.Cleaner, error) {
+	cleaner, err := s.cleanerRepo.GetByID(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner: %w", err)
+	}
+	if cleaner == nil {
+		return nil, fmt.Errorf("cleaner not found")
+	}
+
+	cleaner.IsActive = true
+	cleaner.RejectedReason = sql.NullString{Valid: false}
+
+	if err := s.cleanerRepo.Update(cleaner); err != nil {
+		return nil, fmt.Errorf("failed to activate cleaner: %w", err)
+	}
+
+	// TODO: Send activation email to cleaner (async)
+	// go func() {
+	// 	ctx := context.Background()
+	// 	user, err := s.userRepo.GetByID(cleaner.UserID)
+	// 	if err == nil && user != nil && user.Email.Valid {
+	// 		cleanerName := "Cleaner"
+	// 		if user.FirstName.Valid {
+	// 			cleanerName = user.FirstName.String
+	// 		}
+
+	// 		_ = s.emailService.SendCleanerActivatedEmail(
+	// 			ctx,
+	// 			user.Email.String,
+	// 			cleanerName,
+	// 		)
+	// 	}
+	// }()
+
+	return cleaner, nil
+}
+
+// ToggleCleanerAvailability toggles a cleaner's availability status (admin only)
+func (s *CleanerService) ToggleCleanerAvailability(cleanerID, adminID string) (*models.Cleaner, error) {
+	cleaner, err := s.cleanerRepo.GetByID(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner: %w", err)
+	}
+	if cleaner == nil {
+		return nil, fmt.Errorf("cleaner not found")
+	}
+
+	cleaner.IsAvailable = !cleaner.IsAvailable
+
+	if err := s.cleanerRepo.Update(cleaner); err != nil {
+		return nil, fmt.Errorf("failed to toggle availability: %w", err)
+	}
+
+	return cleaner, nil
+}
+
+// VerifyCleanerDocument verifies a specific document for a cleaner (admin only)
+func (s *CleanerService) VerifyCleanerDocument(cleanerID, adminID, documentType string) (*models.Cleaner, error) {
+	cleaner, err := s.cleanerRepo.GetByID(cleanerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cleaner: %w", err)
+	}
+	if cleaner == nil {
+		return nil, fmt.Errorf("cleaner not found")
+	}
+
+	// Update verification status based on document type
+	switch documentType {
+	case "id_document":
+		cleaner.IDDocumentVerified = true
+	case "background_check":
+		cleaner.BackgroundCheckVerified = true
+	default:
+		return nil, fmt.Errorf("invalid document type: %s", documentType)
+	}
+
+	if err := s.cleanerRepo.Update(cleaner); err != nil {
+		return nil, fmt.Errorf("failed to verify document: %w", err)
+	}
+
+	return cleaner, nil
+}

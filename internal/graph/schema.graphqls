@@ -195,6 +195,19 @@ type Cleaner {
   updatedAt: Time!
 }
 
+# Cleaner statistics for admin dashboard
+type CleanerStats {
+  totalBookings: Int!
+  completedBookings: Int!
+  cancelledBookings: Int!
+  noShowCount: Int!
+  averageRating: Float
+  totalEarnings: Float!
+  completionRate: Float!
+  responseTime: Float
+  lastActiveDate: Time
+}
+
 input CreateCleanerProfileInput {
   phoneNumber: String!
   dateOfBirth: String
@@ -766,6 +779,7 @@ type Query {
 
   # Current user
   me: User
+  user(id: ID!): User
 
   # Client profile
   myClientProfile: Client
@@ -837,6 +851,12 @@ type Query {
   cleaners(limit: Int, offset: Int, status: ApprovalStatus, search: String): [Cleaner!]!
   companies(limit: Int, offset: Int, status: CompanyApprovalStatus, search: String): [Company!]!
   platformSettings: PlatformSettings!
+
+  # Admin cleaner management
+  cleanerStats(cleanerId: ID!): CleanerStats!
+  cleanerAvailability(cleanerId: ID!): [Availability!]!
+  cleanerBookings(cleanerId: ID!, filter: BookingFilter): [Booking!]!
+  cleanerPayouts(cleanerId: ID!, limit: Int): [Payout!]!
 
   # Admin analytics
   adminKPIs(period: KPIPeriod!): AdminKPIs!
@@ -916,6 +936,12 @@ type Mutation {
   rejectCleanerProfile(cleanerId: ID!, reason: String!): Cleaner!
   approveCompany(companyId: ID!): Company!
   rejectCompany(companyId: ID!, reason: String!): Company!
+
+  # Admin cleaner management
+  suspendCleaner(cleanerId: ID!, reason: String!): Cleaner!
+  activateCleaner(cleanerId: ID!): Cleaner!
+  toggleCleanerAvailability(cleanerId: ID!): Cleaner!
+  verifyCleanerDocument(cleanerId: ID!, documentType: String!): Cleaner!
 
   # Admin booking actions
   reassignBooking(bookingId: ID!, cleanerId: ID!): Booking!

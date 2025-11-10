@@ -710,3 +710,89 @@ func (r *BookingRepository) CountActiveBookingsByCleanerID(cleanerID string) (in
 
 	return count, nil
 }
+
+// GetByCleanerID gets bookings for a specific cleaner with optional filters
+func (r *BookingRepository) GetByCleanerID(cleanerID string, limit, offset int, status *BookingStatus, search *string) ([]*Booking, error) {
+	query := `
+		SELECT id, client_id, cleaner_id, address_id, scheduled_date, scheduled_time,
+		       estimated_hours, total_price, platform_fee,
+		       cleaner_payout, status, service_type, area_sqm, special_instructions,
+		       started_at, completed_at,
+		       client_rating, client_review, cleaner_rating, cleaner_review,
+		       cancellation_reason, created_at, updated_at
+		FROM bookings
+		WHERE cleaner_id = $1
+	`
+
+	args := []interface{}{cleanerID}
+	argIndex := 2
+
+	// Filter by status if provided
+	if status != nil {
+		query += ` AND status = $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, *status)
+		argIndex++
+	}
+
+	// Filter by search if provided (search by ID or address)
+	if search != nil && *search != "" {
+		query += ` AND id ILIKE $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, "%"+*search+"%")
+		argIndex++
+	}
+
+	query += ` ORDER BY created_at DESC`
+
+	if limit > 0 {
+		query += ` LIMIT $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, limit)
+		argIndex++
+	}
+
+	if offset > 0 {
+		query += ` OFFSET $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, offset)
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bookings: %w", err)
+	}
+	defer rows.Close()
+
+	var bookings []*Booking
+	for rows.Next() {
+		booking := &Booking{}
+		err := rows.Scan(
+			&booking.ID,
+			&booking.ClientID,
+			&booking.CleanerID,
+			&booking.AddressID,
+			&booking.ScheduledDate,
+			&booking.ScheduledTime,
+			&booking.EstimatedHours,
+			&booking.TotalPrice,
+			&booking.PlatformFee,
+			&booking.CleanerPayout,
+			&booking.Status,
+			&booking.ServiceType,
+			&booking.AreaSqm,
+			&booking.SpecialInstructions,
+			&booking.StartedAt,
+			&booking.CompletedAt,
+			&booking.ClientRating,
+			&booking.ClientReview,
+			&booking.CleanerRating,
+			&booking.CleanerReview,
+			&booking.CancellationReason,
+			&booking.CreatedAt,
+			&booking.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan booking: %w", err)
+		}
+		bookings = append(bookings, booking)
+	}
+
+	return bookings, rows.Err()
+}

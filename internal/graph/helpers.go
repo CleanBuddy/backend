@@ -801,3 +801,32 @@ func convertMessageToGraphQL(message *models.Message) *model.Message {
 		UpdatedAt:  message.UpdatedAt,
 	}
 }
+
+// convertCleanerStatsToGraphQL converts database cleaner stats model to GraphQL model
+func convertCleanerStatsToGraphQL(stats *models.CleanerStats) *model.CleanerStats {
+	var averageRating *float64
+	var responseTime *float64
+	var lastActiveDate *time.Time
+
+	if stats.AverageRating.Valid {
+		averageRating = &stats.AverageRating.Float64
+	}
+	if stats.ResponseTime.Valid {
+		responseTime = &stats.ResponseTime.Float64
+	}
+	if stats.LastActiveDate.Valid {
+		lastActiveDate = &stats.LastActiveDate.Time
+	}
+
+	return &model.CleanerStats{
+		TotalBookings:     stats.TotalBookings,
+		CompletedBookings: stats.CompletedBookings,
+		CancelledBookings: stats.CancelledBookings,
+		NoShowCount:       stats.NoShowCount,
+		AverageRating:     averageRating,
+		TotalEarnings:     stats.TotalEarnings,
+		CompletionRate:    stats.CompletionRate,
+		ResponseTime:      responseTime,
+		LastActiveDate:    lastActiveDate,
+	}
+}

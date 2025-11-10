@@ -313,3 +313,9 @@ func (s *PayoutService) validateCleanerIBAN(cleanerID string) error {
 
 	return nil
 }
+
+// GetCleanerPayouts gets payouts for a specific cleaner (admin only)
+func (s *PayoutService) GetCleanerPayouts(cleanerID string, limit int) ([]*models.Payout, error) {
+	offset := 0
+	return s.payoutRepo.GetByCleanerID(cleanerID, limit, offset)
+}

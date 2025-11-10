@@ -1156,3 +1156,8 @@ func (s *BookingService) notifyBookingExpired(booking *models.Booking) {
 		// s.emailService.SendEmail(clientEmail, "Booking Cancelled - CleanBuddy", message)
 	}()
 }
+
+// GetCleanerBookingsAdmin gets bookings for a specific cleaner (admin only)
+func (s *BookingService) GetCleanerBookingsAdmin(cleanerID string, limit, offset int, status *models.BookingStatus, search *string) ([]*models.Booking, error) {
+	return s.bookingRepo.GetByCleanerID(cleanerID, limit, offset, status, search)
+}

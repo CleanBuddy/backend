@@ -213,6 +213,18 @@ type CleanerApplicationInput struct {
 	Documents    *DocumentInput     `json:"documents,omitempty"`
 }
 
+type CleanerStats struct {
+	TotalBookings     int        `json:"totalBookings"`
+	CompletedBookings int        `json:"completedBookings"`
+	CancelledBookings int        `json:"cancelledBookings"`
+	NoShowCount       int        `json:"noShowCount"`
+	AverageRating     *float64   `json:"averageRating,omitempty"`
+	TotalEarnings     float64    `json:"totalEarnings"`
+	CompletionRate    float64    `json:"completionRate"`
+	ResponseTime      *float64   `json:"responseTime,omitempty"`
+	LastActiveDate    *time.Time `json:"lastActiveDate,omitempty"`
+}
+
 type Client struct {
 	ID                string    `json:"id"`
 	UserID            string    `json:"userId"`

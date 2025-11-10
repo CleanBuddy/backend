@@ -721,6 +721,70 @@ func (r *mutationResolver) RejectCompany(ctx context.Context, companyID string, 
 	return convertCompanyToGraphQL(company), nil
 }
 
+// SuspendCleaner is the resolver for the suspendCleaner field.
+func (r *mutationResolver) SuspendCleaner(ctx context.Context, cleanerID string, reason string) (*model.Cleaner, error) {
+	// Require admin authorization
+	adminID, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaner, err := r.CleanerService.SuspendCleaner(cleanerID, adminID, reason)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCleanerToGraphQL(cleaner), nil
+}
+
+// ActivateCleaner is the resolver for the activateCleaner field.
+func (r *mutationResolver) ActivateCleaner(ctx context.Context, cleanerID string) (*model.Cleaner, error) {
+	// Require admin authorization
+	adminID, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaner, err := r.CleanerService.ActivateCleaner(cleanerID, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCleanerToGraphQL(cleaner), nil
+}
+
+// ToggleCleanerAvailability is the resolver for the toggleCleanerAvailability field.
+func (r *mutationResolver) ToggleCleanerAvailability(ctx context.Context, cleanerID string) (*model.Cleaner, error) {
+	// Require admin authorization
+	adminID, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaner, err := r.CleanerService.ToggleCleanerAvailability(cleanerID, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCleanerToGraphQL(cleaner), nil
+}
+
+// VerifyCleanerDocument is the resolver for the verifyCleanerDocument field.
+func (r *mutationResolver) VerifyCleanerDocument(ctx context.Context, cleanerID string, documentType string) (*model.Cleaner, error) {
+	// Require admin authorization
+	adminID, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaner, err := r.CleanerService.VerifyCleanerDocument(cleanerID, adminID, documentType)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCleanerToGraphQL(cleaner), nil
+}
+
 // ReassignBooking is the resolver for the reassignBooking field.
 func (r *mutationResolver) ReassignBooking(ctx context.Context, bookingID string, cleanerID string) (*model.Booking, error) {
 	// Require admin authorization
@@ -1236,6 +1300,26 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}
 
 	user, err := r.AuthService.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	return convertUserToGraphQL(user), nil
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.AuthService.GetUserByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -2312,6 +2396,97 @@ func (r *queryResolver) PlatformSettings(ctx context.Context) (*model.PlatformSe
 	return convertPlatformSettingsToGraphQL(settings), nil
 }
 
+// CleanerStats is the resolver for the cleanerStats field.
+func (r *queryResolver) CleanerStats(ctx context.Context, cleanerID string) (*model.CleanerStats, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stats, err := r.CleanerService.GetCleanerStats(cleanerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCleanerStatsToGraphQL(stats), nil
+}
+
+// CleanerAvailability is the resolver for the cleanerAvailability field.
+func (r *queryResolver) CleanerAvailability(ctx context.Context, cleanerID string) ([]*model.Availability, error) {
+	// Require admin authorization
+	adminID, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	availability, err := r.AvailabilityService.GetCleanerAvailability(cleanerID, adminID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL models
+	result := make([]*model.Availability, len(availability))
+	for i, avail := range availability {
+		result[i] = convertAvailabilityToGraphQL(avail)
+	}
+
+	return result, nil
+}
+
+// CleanerBookings is the resolver for the cleanerBookings field.
+func (r *queryResolver) CleanerBookings(ctx context.Context, cleanerID string, filter *model.BookingFilter) ([]*model.Booking, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get bookings for this cleaner
+	limit := 100
+	offset := 0
+
+	bookings, err := r.BookingService.GetCleanerBookingsAdmin(cleanerID, limit, offset, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL models
+	result := make([]*model.Booking, len(bookings))
+	for i, booking := range bookings {
+		result[i] = convertBookingToGraphQL(booking)
+	}
+
+	return result, nil
+}
+
+// CleanerPayouts is the resolver for the cleanerPayouts field.
+func (r *queryResolver) CleanerPayouts(ctx context.Context, cleanerID string, limit *int) ([]*model.Payout, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limitVal := 50 // Default limit
+	if limit != nil {
+		limitVal = *limit
+	}
+
+	payouts, err := r.PayoutService.GetCleanerPayouts(cleanerID, limitVal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL models
+	result := make([]*model.Payout, len(payouts))
+	for i, payout := range payouts {
+		result[i] = convertPayoutToGraphQL(payout)
+	}
+
+	return result, nil
+}
+
 // AdminKPIs is the resolver for the adminKPIs field.
 func (r *queryResolver) AdminKPIs(ctx context.Context, period model.KPIPeriod) (*model.AdminKPIs, error) {
 	// Require admin authorization
@@ -2590,33 +2765,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 type bookingResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *cleanerApplicationResolver) User(ctx context.Context, obj *model.CleanerApplication) (*model.User, error) {
-	if obj.UserID == nil || *obj.UserID == "" {
-		return nil, nil
-	}
-
-	user, err := r.Resolver.UserService.GetUserByID(*obj.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return convertUserToGraphQL(user), nil
-}
-func (r *cleanerApplicationResolver) ReviewedBy(ctx context.Context, obj *model.CleanerApplication) (*model.User, error) {
-	// TODO: This field is populated during conversion, but we need to load the actual user object
-	// For now, return nil if not populated
-	return nil, nil
-}
-func (r *Resolver) CleanerApplication() generated.CleanerApplicationResolver {
-	return &cleanerApplicationResolver{r}
-}
-type cleanerApplicationResolver struct{ *Resolver }
-*/

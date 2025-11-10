@@ -504,3 +504,62 @@ func (r *CleanerRepository) GetCleaners(limit, offset int, status *string, searc
 
 	return cleaners, rows.Err()
 }
+
+// CleanerStats holds statistics for a cleaner
+type CleanerStats struct {
+	TotalBookings      int
+	CompletedBookings  int
+	CancelledBookings  int
+	NoShowCount        int
+	AverageRating      sql.NullFloat64
+	TotalEarnings      float64
+	CompletionRate     float64
+	ResponseTime       sql.NullFloat64 // Average response time in hours
+	LastActiveDate     sql.NullTime
+}
+
+// GetCleanerStats retrieves statistics for a specific cleaner
+func (r *CleanerRepository) GetCleanerStats(cleanerID string) (*CleanerStats, error) {
+	stats := &CleanerStats{}
+
+	// Query to get booking statistics and cleaner info in one go
+	query := `
+		SELECT
+			COALESCE(COUNT(b.id), 0) as total_bookings,
+			COALESCE(COUNT(CASE WHEN b.status = 'COMPLETED' THEN 1 END), 0) as completed_bookings,
+			COALESCE(COUNT(CASE WHEN b.status IN ('CLIENT_CANCELED', 'CLEANER_CANCELED') THEN 1 END), 0) as cancelled_bookings,
+			COALESCE(COUNT(CASE WHEN b.status = 'NO_SHOW' THEN 1 END), 0) as no_show_count,
+			c.average_rating,
+			c.total_earnings,
+			CASE
+				WHEN COUNT(b.id) > 0 THEN
+					(COUNT(CASE WHEN b.status = 'COMPLETED' THEN 1 END)::float / COUNT(b.id)::float) * 100
+				ELSE 0
+			END as completion_rate,
+			MAX(b.updated_at) as last_active_date
+		FROM cleaners c
+		LEFT JOIN bookings b ON c.id = b.cleaner_id
+		WHERE c.id = $1
+		GROUP BY c.id, c.average_rating, c.total_earnings
+	`
+
+	err := r.db.QueryRow(query, cleanerID).Scan(
+		&stats.TotalBookings,
+		&stats.CompletedBookings,
+		&stats.CancelledBookings,
+		&stats.NoShowCount,
+		&stats.AverageRating,
+		&stats.TotalEarnings,
+		&stats.CompletionRate,
+		&stats.LastActiveDate,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("cleaner not found")
+		}
+		return nil, fmt.Errorf("failed to get cleaner stats: %w", err)
+	}
+
+	return stats, nil
+}
