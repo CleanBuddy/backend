@@ -1,0 +1,218 @@
+# CleanBuddy Configuration File
+# This file contains all configurable values for the platform
+
+# Server Configuration
+server:
+  port: 8080
+  environment: development # development, staging, production
+
+# Database Configuration
+database:
+  max_open_connections: 25
+  max_idle_connections: 5
+  connection_max_lifetime_minutes: 5
+
+# Redis Configuration
+redis:
+  cache_ttl_minutes: 15
+
+# Authentication Configuration
+auth:
+  jwt_expiration_days: 7
+  otp_expiration_minutes: 5
+  otp_length: 6
+  otp_dev_code: "123456" # Fixed code for development
+
+# Pricing Configuration
+pricing:
+  # Platform fees
+  default_platform_fee_percentage: 10.0
+  first_booking_discount_percentage: 10.0
+  repeat_customer_discount_percentage: 2.0
+
+  # Service types base pricing (RON per hour)
+  standard_cleaning:
+    base_price_per_hour: 50.0
+    minimum_hours: 2
+    price_per_sqm: 2.5
+
+  deep_cleaning:
+    base_price_per_hour: 60.0
+    minimum_hours: 3
+    price_per_sqm: 3.0
+    multiplier: 1.5
+
+  office_cleaning:
+    base_price_per_hour: 45.0
+    minimum_hours: 2
+    price_per_sqm: 2.0
+
+  post_renovation:
+    base_price_per_hour: 70.0
+    minimum_hours: 4
+    price_per_sqm: 4.0
+
+  move_in_out:
+    base_price_per_hour: 65.0
+    minimum_hours: 3
+    price_per_sqm: 3.5
+
+  # Add-ons pricing
+  addons:
+    window_cleaning_per_window: 5.0
+    carpet_cleaning_per_sqm: 8.0
+    fridge_cleaning: 25.0
+    oven_cleaning: 25.0
+    balcony_cleaning: 20.0
+    cleaning_supplies: 15.0
+
+  # Time-based multipliers
+  multipliers:
+    weekend: 1.2 # Saturday & Sunday
+    evening: 1.1 # After 18:00
+    holiday: 1.5 # Public holidays
+
+  # Frequency discounts (percentage off)
+  frequency_discounts:
+    weekly: 15.0    # 15% discount for weekly recurring bookings
+    biweekly: 10.0  # 10% discount for biweekly recurring bookings
+    monthly: 5.0    # 5% discount for monthly recurring bookings
+
+# Booking Configuration
+booking:
+  # Timeframes
+  min_advance_booking_hours: 24
+  max_advance_booking_days: 90
+  cancellation_free_hours: 24 # Free cancellation if > 24h before scheduled time
+
+  # Matching algorithm
+  cleaner_search_radius_km: 10
+  auto_assign_timeout_minutes: 30
+
+  # Ratings
+  min_rating: 1
+  max_rating: 5
+
+# Cleaner Configuration
+cleaner:
+  # KYC Requirements
+  require_id_document: true
+  require_background_check: true
+  require_profile_photo: true
+
+  # Approval
+  auto_approve_enabled: false
+  approval_timeout_days: 2
+
+  # Performance thresholds
+  min_rating_to_stay_active: 3.5
+  max_cancellations_per_month: 3
+  max_no_shows_per_month: 1
+
+# Client Configuration
+client:
+  # Limits
+  max_active_bookings: 5
+  max_addresses: 10
+
+# Company Information (for invoices and legal documents)
+company:
+  legal_name: "CleanBuddy SRL"
+  trade_name: "CleanBuddy"
+  cui: "RO12345678" # TODO: Replace with real CUI after company registration
+  registration_number: "J40/1234/2025" # TODO: Replace with real registration number
+  vat_registered: true
+  vat_rate: 0.19 # 19% VAT in Romania
+
+  # Address
+  address:
+    street: "Str. Exemplu, Nr. 1"
+    city: "București"
+    county: "București"
+    postal_code: "010101"
+    country: "RO"
+
+  # Contact
+  contact:
+    email: "contact@cleanbuddy.ro"
+    phone: "+40-XXX-XXX-XXX" # TODO: Replace with real phone
+    website: "https://cleanbuddy.ro"
+
+  # Banking
+  bank:
+    name: "Banca Transilvania"
+    iban: "RO00BTRL0000000000000000" # TODO: Replace with real IBAN
+    swift: "BTRLRO22"
+
+# ANAF e-Factura Configuration
+anaf:
+  enabled: false # Enable after obtaining ANAF credentials
+  environment: "sandbox" # sandbox or production
+  sandbox_url: "https://api.anaf.ro/test/FCTEL/rest"
+  production_url: "https://api.anaf.ro/prod/FCTEL/rest"
+
+  # OAuth2 credentials (get from ANAF SPV portal)
+  client_id: "" # Set via ANAF_CLIENT_ID env var
+  client_secret: "" # Set via ANAF_CLIENT_SECRET env var
+
+  # Invoice submission settings
+  auto_submit: true # Automatically submit invoices to ANAF
+  submission_delay_minutes: 5 # Delay before submission (for manual review)
+  max_retry_attempts: 3
+  retry_delay_minutes: 15
+
+  # Legal requirements
+  submission_deadline_days: 5 # ANAF requires submission within 5 days
+
+
+# Payment Configuration (future)
+payment:
+  provider: "netopia" # netopia
+  preauth_enabled: true
+  capture_on_completion: true
+  refund_window_days: 14
+
+# Notification Configuration (future)
+notifications:
+  email_enabled: true
+  sms_enabled: false
+  push_enabled: false
+
+  # Email templates
+  email_from: "noreply@cleanbuddy.ro"
+  email_from_name: "CleanBuddy"
+
+# Feature Flags
+features:
+  cleaning_companies_enabled: false
+  instant_booking_enabled: false
+  recurring_bookings_enabled: false
+  gift_cards_enabled: false
+
+# Business Rules
+business:
+  # Operating hours
+  service_start_hour: 8 # 08:00
+  service_end_hour: 20 # 20:00
+
+  # Service areas (cities)
+  enabled_cities:
+    - București
+    - Cluj-Napoca
+    - Timișoara
+    - Iași
+    - Constanța
+    - Brașov
+
+  # Languages
+  supported_languages:
+    - ro
+    - en
+  default_language: ro
+
+# ANAF e-Factura Configuration (future)
+efactura:
+  enabled: false
+  environment: test # test, production
+  retry_attempts: 3
+  retry_delay_seconds: 60

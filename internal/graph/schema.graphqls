@@ -1,0 +1,1117 @@
+# CleanBuddy GraphQL Schema
+# This is the foundation schema - we'll build it incrementally
+
+scalar Time
+
+# User roles
+enum UserRole {
+  CLIENT
+  CLEANER
+  COMPANY_ADMIN
+  PLATFORM_ADMIN
+}
+
+# Basic User type
+type User {
+  id: ID!
+  email: String
+  phone: String
+  role: UserRole!
+  firstName: String
+  lastName: String
+  createdAt: Time!
+  updatedAt: Time!
+  client: Client
+}
+
+# Client profile (extends User)
+type Client {
+  id: ID!
+  userId: ID!
+  phoneNumber: String
+  preferredLanguage: String!
+  totalBookings: Int!
+  totalSpent: Float!
+  averageRating: Float
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input UpdateClientProfileInput {
+  firstName: String
+  lastName: String
+  phoneNumber: String
+  preferredLanguage: String
+}
+
+# User profile update input (for any user)
+input UpdateUserProfileInput {
+  firstName: String
+  lastName: String
+  email: String
+}
+
+# Address type
+type Address {
+  id: ID!
+  userId: ID!
+  label: String!
+  streetAddress: String!
+  apartment: String
+  city: String!
+  county: String!
+  postalCode: String
+  country: String!
+  additionalInfo: String
+  isDefault: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input CreateAddressInput {
+  label: String!
+  streetAddress: String!
+  apartment: String
+  city: String!
+  county: String!
+  postalCode: String
+  additionalInfo: String
+  isDefault: Boolean
+}
+
+input UpdateAddressInput {
+  label: String
+  streetAddress: String
+  apartment: String
+  city: String
+  county: String
+  postalCode: String
+  additionalInfo: String
+  isDefault: Boolean
+}
+
+# Cleaner approval status
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+# Availability type
+enum AvailabilityType {
+  RECURRING
+  ONE_TIME
+  BLOCKED
+}
+
+# Company approval status
+enum CompanyApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+# Booking status
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  REFUNDED
+  NO_SHOW_CLIENT
+  NO_SHOW_CLEANER
+}
+
+# Booking filter
+enum BookingFilter {
+  ALL
+  UPCOMING
+  PAST
+  ACTIVE
+}
+
+# Service type
+enum ServiceType {
+  STANDARD
+  DEEP_CLEANING
+  OFFICE
+  POST_RENOVATION
+  MOVE_IN_OUT
+}
+
+# Payment provider
+enum PaymentProvider {
+  NETOPIA
+  MANUAL
+}
+
+# Payment type
+enum PaymentType {
+  PREAUTHORIZATION
+  CAPTURE
+  REFUND
+  CANCELLATION
+}
+
+# Payment status
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+# Cleaner profile
+type Cleaner {
+  id: ID!
+  userId: ID!
+  phoneNumber: String!
+  dateOfBirth: String
+  streetAddress: String
+  city: String
+  county: String
+  postalCode: String
+  yearsOfExperience: Int!
+  bio: String
+  specializations: [String!]!
+  languages: [String!]!
+  iban: String  # Romanian IBAN for payouts
+  idDocumentURL: String
+  idDocumentVerified: Boolean!
+  backgroundCheckURL: String
+  backgroundCheckVerified: Boolean!
+  profilePhotoURL: String
+  averageRating: Float
+  totalJobs: Int!
+  totalEarnings: Float!
+  approvalStatus: ApprovalStatus!
+  isActive: Boolean!
+  isAvailable: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input CreateCleanerProfileInput {
+  phoneNumber: String!
+  dateOfBirth: String
+  streetAddress: String
+  city: String
+  county: String
+  postalCode: String
+  yearsOfExperience: Int!
+  bio: String
+  specializations: [String!]
+  languages: [String!]
+}
+
+input UpdateCleanerProfileInput {
+  phoneNumber: String
+  dateOfBirth: String
+  streetAddress: String
+  city: String
+  county: String
+  postalCode: String
+  yearsOfExperience: Int
+  bio: String
+  specializations: [String!]
+  languages: [String!]
+  iban: String
+  isAvailable: Boolean
+}
+
+# Availability type
+type Availability {
+  id: ID!
+  cleanerId: ID!
+  type: AvailabilityType!
+  dayOfWeek: Int  # 0=Sunday, 6=Saturday
+  specificDate: Time
+  startTime: String!  # HH:MM format
+  endTime: String!
+  isActive: Boolean!
+  notes: String
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input CreateAvailabilityInput {
+  type: AvailabilityType!
+  dayOfWeek: Int
+  specificDate: Time
+  startTime: String!
+  endTime: String!
+  isActive: Boolean
+  notes: String
+}
+
+input UpdateAvailabilityInput {
+  startTime: String
+  endTime: String
+  isActive: Boolean
+  notes: String
+}
+
+# Company type
+type Company {
+  id: ID!
+  name: String!
+  cui: String!
+  registrationNumber: String
+  iban: String
+  bankName: String
+  legalAddress: String
+  contactEmail: String
+  contactPhone: String
+  approvalStatus: CompanyApprovalStatus!
+  rejectedReason: String
+  isActive: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type CompanyCleaner {
+  id: ID!
+  companyId: ID!
+  cleanerId: ID!
+  cleaner: Cleaner!
+  status: String!
+  joinedAt: Time!
+  leftAt: Time
+}
+
+type CompanyStats {
+  totalTeamMembers: Int!
+  activeTeamMembers: Int!
+  totalBookings: Int!
+  activeBookings: Int!
+  completedBookings: Int!
+  totalRevenue: Float!
+  monthlyRevenue: Float!
+  averageRating: Float
+}
+
+input CreateCompanyInput {
+  name: String!
+  cui: String!
+  registrationNumber: String
+  iban: String
+  bankName: String
+  legalAddress: String
+  contactEmail: String
+  contactPhone: String
+}
+
+input UpdateCompanyInput {
+  name: String
+  iban: String
+  bankName: String
+  legalAddress: String
+  contactEmail: String
+  contactPhone: String
+}
+
+# Booking type
+type Booking {
+  id: ID!
+  reservationCode: String  # Human-friendly unique identifier (e.g., CB-2024-A1B2C3)
+  clientId: ID!
+  client: User  # Resolved client user object
+  cleanerId: ID
+  cleaner: User  # Resolved cleaner user object
+  addressId: ID!
+  address: Address  # Resolved address object
+  serviceType: ServiceType!
+  areaSqm: Int
+  estimatedHours: Int!
+  frequency: String  # one_time, weekly, biweekly, monthly
+  scheduledDate: Time  # Nullable for flexible scheduling
+  scheduledTime: Time  # Nullable for flexible scheduling
+  timePreferences: String  # JSONB: preferred dates/times for cleaner to choose from
+  includesDeepCleaning: Boolean!
+  includesWindows: Boolean!
+  includesCarpetCleaning: Boolean!
+  includesFridge: Boolean!
+  includesOven: Boolean!
+  includesBalcony: Boolean!
+  numberOfWindows: Int!
+  carpetAreaSqm: Int!
+  basePrice: Float!
+  addonsPrice: Float!
+  totalPrice: Float!
+  platformFee: Float!
+  cleanerPayout: Float!
+  discountApplied: Float!
+  status: BookingStatus!
+  specialInstructions: String
+  accessInstructions: String
+  confirmedAt: Time
+  startedAt: Time
+  completedAt: Time
+  cancelledAt: Time
+  cancelledBy: ID
+  cancellationReason: String
+  clientRating: Int
+  clientReview: String
+  cleanerRating: Int
+  cleanerReview: String
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+# Price quote type
+type PriceQuote {
+  basePrice: Float!
+  addonsPrice: Float!
+  subtotal: Float!
+  discount: Float!
+  platformFee: Float!
+  totalPrice: Float!
+  cleanerPayout: Float!
+  estimatedHours: Int!
+  breakdown: PriceBreakdown!
+}
+
+type PriceBreakdown {
+  basePricePerHour: Float!
+  hoursCharged: Int!
+  areaPrice: Float!
+  windowsPrice: Float!
+  carpetPrice: Float!
+  timeMultiplier: Float!
+  discountPercentage: Float!
+  platformFeePercentage: Float!
+}
+
+# Input for price quote calculation
+input PriceQuoteInput {
+  serviceType: ServiceType!
+  areaSqm: Int
+  estimatedHours: Int!
+  scheduledDate: Time!
+  scheduledTime: Time!
+  includesWindows: Boolean!
+  numberOfWindows: Int!
+  includesCarpet: Boolean!
+  carpetAreaSqm: Int!
+  frequency: String  # one_time, weekly, biweekly, monthly
+}
+
+# Input for creating a booking
+input CreateBookingInput {
+  addressId: ID!
+  serviceType: ServiceType!
+  areaSqm: Int
+  estimatedHours: Int!
+  scheduledDate: Time
+  scheduledTime: Time
+  timePreferences: String  # JSONB: preferred dates/times for cleaner to choose from
+  includesDeepCleaning: Boolean!
+  includesWindows: Boolean!
+  numberOfWindows: Int!
+  includesCarpet: Boolean!
+  carpetAreaSqm: Int!
+  includesFridge: Boolean  # Fridge cleaning addon
+  includesOven: Boolean    # Oven cleaning addon
+  includesBalcony: Boolean # Balcony cleaning addon
+  specialInstructions: String
+  accessInstructions: String
+  supplies: String!        # Required: "client_provides" or "cleaner_provides"
+  frequency: String  # one_time, weekly, biweekly, monthly
+}
+
+# Input for admin editing a booking
+input AdminEditBookingInput {
+  scheduledDate: Time
+  scheduledTime: Time
+  serviceType: ServiceType
+  estimatedHours: Int
+  areaSqm: Int
+  specialInstructions: String
+  accessInstructions: String
+}
+
+# Payment type
+type Payment {
+  id: ID!
+  bookingId: ID!
+  userId: ID!
+  provider: PaymentProvider!
+  providerTransactionId: String
+  providerOrderId: String
+  paymentType: PaymentType!
+  status: PaymentStatus!
+  amount: Float!
+  currency: String!
+  cardLastFour: String
+  cardBrand: String
+  errorCode: String
+  errorMessage: String
+  authorizedAt: Time
+  capturedAt: Time
+  failedAt: Time
+  refundedAt: Time
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+# Checkin type
+type Checkin {
+  id: ID!
+  bookingId: ID!
+  cleanerId: ID!
+  checkInTime: Time
+  checkInLatitude: Float
+  checkInLongitude: Float
+  checkOutTime: Time
+  checkOutLatitude: Float
+  checkOutLongitude: Float
+  totalHoursWorked: Float
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+# Invoice status
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  CANCELLED
+}
+
+# Invoice type
+type Invoice {
+  id: ID!
+  bookingId: ID!
+  invoiceNumber: String!
+  issueDate: Time!
+  dueDate: Time!
+  clientName: String!
+  clientEmail: String
+  cleanerName: String!
+  serviceDescription: String!
+  subtotal: Float!
+  taxAmount: Float!
+  totalAmount: Float!
+  currency: String!
+  status: InvoiceStatus!
+  pdfUrl: String
+  xmlUrl: String
+  createdAt: Time!
+  updatedAt: Time!
+
+  # ANAF e-Factura fields
+  anafUploadIndex: String
+  anafStatus: ANAFStatus!
+  anafSubmittedAt: Time
+  anafProcessedAt: Time
+  anafDownloadId: String
+  anafConfirmationUrl: String
+  anafErrors: [ANAFError!]
+  anafRetryCount: Int!
+  anafLastRetryAt: Time
+}
+
+# ANAF submission status
+enum ANAFStatus {
+  PENDING
+  PROCESSING
+  ACCEPTED
+  REJECTED
+  FAILED
+}
+
+# ANAF error details
+type ANAFError {
+  code: String!
+  message: String!
+  field: String
+}
+
+# Reviewer role
+enum ReviewerRole {
+  CLIENT
+  CLEANER
+}
+
+# Review type
+type Review {
+  id: ID!
+  bookingId: ID!
+  reviewerId: ID!
+  revieweeId: ID!
+  reviewerRole: ReviewerRole!
+  rating: Int!
+  comment: String
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input CreateReviewInput {
+  bookingId: ID!
+  rating: Int!
+  comment: String
+}
+
+# Dispute types
+enum DisputeType {
+  QUALITY_ISSUE
+  DAMAGE
+  NO_SHOW
+  PRICING
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeResolutionType {
+  PARTIAL_REFUND
+  FULL_REFUND
+  RECLEAN
+  REJECTED
+}
+
+type Dispute {
+  id: ID!
+  bookingId: ID!
+  createdBy: ID!
+  assignedTo: ID
+  disputeType: DisputeType!
+  status: DisputeStatus!
+  description: String!
+  resolutionType: DisputeResolutionType
+  resolutionNotes: String
+  refundAmount: Float
+  resolvedAt: Time
+  resolvedBy: ID
+  cleanerResponse: String
+  cleanerRespondedAt: Time
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+input CreateDisputeInput {
+  bookingId: ID!
+  disputeType: DisputeType!
+  description: String!
+}
+
+input ResolveDisputeInput {
+  resolutionType: DisputeResolutionType!
+  resolutionNotes: String!
+  refundAmount: Float
+}
+
+# Photo types
+enum PhotoType {
+  BEFORE
+  AFTER
+  DISPUTE_EVIDENCE
+}
+
+type Photo {
+  id: ID!
+  bookingId: ID
+  disputeId: ID
+  uploadedBy: ID!
+  photoType: PhotoType!
+  fileName: String!
+  fileSize: Int!
+  mimeType: String!
+  url: String!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+scalar Upload
+
+# Payout types
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+type Payout {
+  id: ID!
+  cleanerId: ID!
+  periodStart: Time!
+  periodEnd: Time!
+  status: PayoutStatus!
+  totalBookings: Int!
+  totalEarnings: Float!
+  platformFees: Float!
+  netAmount: Float!
+  iban: String
+  transferReference: String
+  settlementInvoiceUrl: String
+  paidAt: Time
+  failedReason: String
+  createdAt: Time!
+  updatedAt: Time!
+  lineItems: [PayoutLineItem!]!
+}
+
+type PayoutLineItem {
+  id: ID!
+  payoutId: ID!
+  bookingId: ID!
+  bookingDate: Time!
+  serviceType: String!
+  bookingAmount: Float!
+  platformFeeRate: Float!
+  platformFee: Float!
+  cleanerEarnings: Float!
+  createdAt: Time!
+}
+
+input GeneratePayoutsInput {
+  year: Int!
+  month: Int!
+}
+
+# Admin Analytics
+enum KPIPeriod {
+  TODAY
+  WEEK
+  MONTH
+}
+
+type AdminKPIs {
+  period: KPIPeriod!
+  totalRevenue: Float!
+  platformFees: Float!
+  totalBookings: Int!
+  completedBookings: Int!
+  activeBookings: Int!
+  cancelledBookings: Int!
+  activeCleaners: Int!
+  activeClients: Int!
+  averageBookingValue: Float!
+  topCleaners: [TopCleanerStat!]!
+}
+
+type TopCleanerStat {
+  cleanerId: ID!
+  cleanerName: String!
+  bookingCount: Int!
+  totalEarnings: Float!
+  averageRating: Float
+}
+
+# Platform Settings (Admin Configuration)
+type PlatformSettings {
+  id: ID!
+  basePrice: Float!
+  weekendMultiplier: Float!
+  eveningMultiplier: Float!
+  platformFeePercent: Float!
+  emailNotificationsEnabled: Boolean!
+  autoApprovalEnabled: Boolean!
+  maintenanceMode: Boolean!
+  updatedAt: Time!
+}
+
+input UpdatePlatformSettingsInput {
+  basePrice: Float
+  weekendMultiplier: Float
+  eveningMultiplier: Float
+  platformFeePercent: Float
+  emailNotificationsEnabled: Boolean
+  autoApprovalEnabled: Boolean
+  maintenanceMode: Boolean
+}
+
+# Messaging
+type Message {
+  id: ID!
+  bookingId: ID!
+  senderId: ID!
+  receiverId: ID!
+  content: String!
+  isRead: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+  sender: User
+  receiver: User
+  booking: Booking
+}
+
+input SendMessageInput {
+  bookingId: ID!
+  receiverId: ID!
+  content: String!
+}
+
+# Authentication
+type Session {
+  token: String!
+  user: User!
+}
+
+# Root Query
+type Query {
+  # Health check
+  ping: String!
+
+  # Current user
+  me: User
+
+  # Client profile
+  myClientProfile: Client
+
+  # Address management
+  myAddresses: [Address!]!
+  address(id: ID!): Address
+
+  # Cleaner profile
+  myCleanerProfile: Cleaner
+  cleaner(id: ID!): Cleaner
+  approvedCleaners: [Cleaner!]!
+
+  # Booking queries
+  myBookings(filter: BookingFilter): [Booking!]!
+  booking(id: ID!): Booking
+  getPriceQuote(input: PriceQuoteInput!): PriceQuote!
+  availableJobs(limit: Int, offset: Int, city: String): [Booking!]!
+
+  # Checkin queries
+  checkin(bookingId: ID!): Checkin
+
+  # Payment queries
+  bookingPayments(bookingId: ID!): [Payment!]!
+  payment(id: ID!): Payment
+
+  # Invoice queries
+  invoice(id: ID!): Invoice
+  invoiceByBooking(bookingId: ID!): Invoice
+  myInvoices: [Invoice!]!
+
+  # Review queries
+  reviewByBooking(bookingId: ID!): Review
+  cleanerReviews(cleanerId: ID!, limit: Int, offset: Int): [Review!]!
+
+  # Dispute queries
+  dispute(id: ID!): Dispute
+  disputeByBooking(bookingId: ID!): Dispute
+  openDisputes(limit: Int): [Dispute!]!
+
+  # Photo queries
+  bookingPhotos(bookingId: ID!): [Photo!]!
+  disputePhotos(disputeId: ID!): [Photo!]!
+
+  # Message queries
+  bookingMessages(bookingId: ID!): [Message!]!
+  myConversations: [Message!]!
+  unreadMessagesCount: Int!
+  bookingUnreadCount(bookingId: ID!): Int!
+
+  # Payout queries
+  myPayouts(limit: Int, offset: Int): [Payout!]!
+  payout(id: ID!): Payout
+  pendingPayouts: [Payout!]!
+  payouts(status: PayoutStatus, limit: Int, offset: Int): [Payout!]!
+
+  # Availability queries
+  myAvailability: [Availability!]!
+
+  # Company queries
+  myCompanies: [Company!]!
+  company(id: ID!): Company
+  companyTeam(companyId: ID!): [CompanyCleaner!]!
+  companyBookings(companyId: ID!, filter: BookingFilter): [Booking!]!
+  companyStats(companyId: ID!): CompanyStats!
+  companyInvoices(companyId: ID!): [Invoice!]!
+
+  # Admin queries
+  cleaners(limit: Int, offset: Int, status: ApprovalStatus, search: String): [Cleaner!]!
+  companies(limit: Int, offset: Int, status: CompanyApprovalStatus, search: String): [Company!]!
+  platformSettings: PlatformSettings!
+
+  # Admin analytics
+  adminKPIs(period: KPIPeriod!): AdminKPIs!
+  allBookingsAdmin(limit: Int, offset: Int, status: BookingStatus, search: String): [Booking!]!
+
+  # ============================================
+  # BOOKING PRICE CALCULATION (Anonymous + Authenticated)
+  # ============================================
+  calculateBookingPrice(input: PriceCalculationInput!): PriceQuote!
+
+  # ============================================
+  # CLEANER APPLICATION QUERIES (Anonymous + Authenticated)
+  # ============================================
+  cleanerApplication(sessionId: String!): CleanerApplication
+  myCleanerApplication: CleanerApplication
+  calculateEarnings(hoursPerWeek: String!, areas: [String!]!): EarningPotential!
+
+  # Admin: pending applications
+  pendingApplications(limit: Int, offset: Int): [CleanerApplication!]!
+  pendingCleanerApplications: [CleanerApplication!]!
+}
+
+# Root Mutation
+type Mutation {
+  # Authentication (OTP-based via email)
+  requestOtp(email: String!): Boolean!
+  loginWithOtp(email: String!, code: String!): Session!
+  loginAsCleanerWithOtp(email: String!, code: String!): Session!
+  logout: Boolean!
+
+  # Client profile management
+  updateClientProfile(input: UpdateClientProfileInput!): Client!
+
+  # Address management
+  createAddress(input: CreateAddressInput!): Address!
+  updateAddress(id: ID!, input: UpdateAddressInput!): Address!
+  deleteAddress(id: ID!): Boolean!
+
+  # Cleaner profile management
+  createCleanerProfile(input: CreateCleanerProfileInput!): Cleaner!
+  updateCleanerProfile(input: UpdateCleanerProfileInput!): Cleaner!
+  uploadCleanerDocument(documentType: String!, fileURL: String!): Cleaner!
+
+  # Booking mutations
+  createBooking(input: CreateBookingInput!): Booking!
+  cancelBooking(id: ID!, reason: String!): Booking!
+  confirmBooking(id: ID!): Booking!
+  startBooking(id: ID!): Booking!
+  completeBooking(id: ID!): Booking!
+  acceptBooking(id: ID!, scheduledDate: Time, scheduledTime: Time): Booking!
+  declineBooking(id: ID!, reason: String): Boolean!
+
+  # Checkin mutations
+  checkIn(bookingId: ID!, latitude: Float!, longitude: Float!): Checkin!
+  checkOut(bookingId: ID!, latitude: Float!, longitude: Float!): Checkin!
+
+  # Payment mutations
+  preauthorizePayment(bookingId: ID!, amount: Float!, provider: PaymentProvider!): Payment!
+  capturePayment(paymentId: ID!): Payment!
+  refundPayment(paymentId: ID!, amount: Float!, reason: String!): Payment!
+  cancelPayment(paymentId: ID!): Payment!
+
+  # Availability mutations
+  createAvailability(input: CreateAvailabilityInput!): Availability!
+  updateAvailability(id: ID!, input: UpdateAvailabilityInput!): Availability!
+  deleteAvailability(id: ID!): Boolean!
+
+  # Company mutations
+  createCompany(input: CreateCompanyInput!): Company!
+  updateCompany(id: ID!, input: UpdateCompanyInput!): Company!
+  addCleanerToCompany(companyId: ID!, cleanerId: ID!): CompanyCleaner!
+  removeCleanerFromCompany(companyId: ID!, cleanerId: ID!): Boolean!
+  uploadCompanyDocument(companyId: ID!, documentType: String!, fileURL: String!): Company!
+
+  # Admin mutations
+  approveCleanerProfile(cleanerId: ID!): Cleaner!
+  rejectCleanerProfile(cleanerId: ID!, reason: String!): Cleaner!
+  approveCompany(companyId: ID!): Company!
+  rejectCompany(companyId: ID!, reason: String!): Company!
+
+  # Admin booking actions
+  reassignBooking(bookingId: ID!, cleanerId: ID!): Booking!
+  adminCancelBooking(bookingId: ID!, reason: String!): Booking!
+  adminUpdateBookingStatus(bookingId: ID!, status: BookingStatus!): Booking!
+  adminEditBooking(bookingId: ID!, input: AdminEditBookingInput!): Booking!
+
+  # Review mutations
+  createReview(input: CreateReviewInput!): Review!
+
+  # Dispute mutations
+  createDispute(input: CreateDisputeInput!): Dispute!
+  addCleanerResponse(disputeId: ID!, response: String!): Dispute!
+  resolveDispute(disputeId: ID!, input: ResolveDisputeInput!): Dispute!
+
+  # Photo mutations
+  uploadPhoto(file: Upload!, bookingId: ID!, photoType: PhotoType!): Photo!
+  uploadDisputePhoto(file: Upload!, disputeId: ID!): Photo!
+  deletePhoto(id: ID!): Boolean!
+
+  # Message mutations
+  sendMessage(input: SendMessageInput!): Message!
+  markMessagesAsRead(bookingId: ID!): Boolean!
+
+  # Payout mutations (admin only)
+  generateMonthlyPayouts(input: GeneratePayoutsInput!): [Payout!]!
+  markPayoutAsSent(id: ID!, transferReference: String!): Payout!
+  markPayoutAsFailed(id: ID!, reason: String!): Payout!
+
+  # Platform settings mutations (admin only)
+  updatePlatformSettings(input: UpdatePlatformSettingsInput!): PlatformSettings!
+
+  # User profile mutations
+  updateUserProfile(input: UpdateUserProfileInput!): User!
+
+  # ANAF e-Factura mutations (admin only)
+  retryANAFSubmission(invoiceId: ID!): Invoice!
+  checkANAFStatus(invoiceId: ID!): Invoice!
+
+
+  # ============================================
+  # CLEANER APPLICATION MUTATIONS (Anonymous + Authenticated)
+  # ============================================
+  saveCleanerApplication(input: CleanerApplicationInput!): CleanerApplication!
+  submitCleanerApplication(applicationId: ID!): CleanerApplication!
+  reviewCleanerApplication(applicationId: ID!, approve: Boolean!, rejectionReason: String): CleanerApplication!
+}
+
+# ============================================
+# PRICE CALCULATION TYPES
+# ============================================
+
+# Input for price calculation (frontend only, no persistence)
+input PriceCalculationInput {
+  cleaningType: String!
+  durationHours: Float
+  areaSize: Int  # Area in square meters (affects pricing)
+  scheduledDate: String  # YYYY-MM-DD format
+  scheduledStartTime: Time
+  includesWindows: Boolean
+  numberOfWindows: Int
+  includesCarpet: Boolean
+  carpetAreaSqm: Int
+  includesFridge: Boolean
+  includesOven: Boolean
+  includesBalcony: Boolean
+  includesSupplies: Boolean
+  frequency: String  # one_time, weekly, biweekly, monthly (affects discount)
+}
+
+
+# ============================================
+# CLEANER APPLICATION TYPES (Phase 17 - UX Redesign)
+# ============================================
+
+type CleanerApplication {
+  id: ID!
+  sessionId: String
+  userId: ID
+  currentStep: Int!
+  status: ApplicationStatus!
+  applicationData: CleanerApplicationData!
+  reviewedBy: User
+  reviewedAt: Time
+  rejectionReason: String
+  adminNotes: String
+  convertedToCleanerId: ID
+  createdAt: Time!
+  updatedAt: Time!
+  submittedAt: Time
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  INCOMPLETE
+}
+
+type CleanerApplicationData {
+  eligibility: EligibilityData
+  availability: AvailabilityData
+  profile: ProfileData
+  legal: LegalData
+  documents: DocumentData
+}
+
+type EligibilityData {
+  age18Plus: Boolean!
+  workRight: String!
+  experience: String!
+}
+
+type AvailabilityData {
+  hoursPerWeek: String!
+  areas: [String!]!
+  days: [String!]!
+  timeSlots: [String!]!
+  estimatedMonthlyEarnings: Float
+}
+
+type ProfileData {
+  photoUrl: String
+  bio: String!
+  languages: [String!]!
+  equipment: [String!]!
+}
+
+type LegalData {
+  status: String!
+  cif: String
+  cnpEncrypted: String!
+  iban: String!
+  bankName: String
+}
+
+type DocumentData {
+  cazierUrl: String
+  idFrontUrl: String
+  idBackUrl: String
+  insuranceUrl: String
+}
+
+input CleanerApplicationInput {
+  sessionId: String
+  userId: ID
+  currentStep: Int!
+  eligibility: EligibilityInput
+  availability: AvailabilityInput
+  profile: ProfileInput
+  legal: LegalInput
+  documents: DocumentInput
+}
+
+input EligibilityInput {
+  age18Plus: Boolean!
+  workRight: String!
+  experience: String!
+}
+
+input AvailabilityInput {
+  hoursPerWeek: String!
+  areas: [String!]!
+  days: [String!]!
+  timeSlots: [String!]!
+}
+
+input ProfileInput {
+  photoUrl: String
+  bio: String!
+  languages: [String!]!
+  equipment: [String!]!
+}
+
+input LegalInput {
+  status: String!
+  cif: String
+  cnpEncrypted: String!
+  iban: String!
+  bankName: String
+}
+
+input DocumentInput {
+  cazierUrl: String
+  idFrontUrl: String
+  idBackUrl: String
+  insuranceUrl: String
+}
+
+type EarningPotential {
+  weeklyMin: Float!
+  weeklyMax: Float!
+  monthlyMin: Float!
+  monthlyMax: Float!
+  baseRate: Float!
+  topCleanerMonthly: Float!
+}
