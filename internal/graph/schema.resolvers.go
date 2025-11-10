@@ -2590,3 +2590,33 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 type bookingResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *cleanerApplicationResolver) User(ctx context.Context, obj *model.CleanerApplication) (*model.User, error) {
+	if obj.UserID == nil || *obj.UserID == "" {
+		return nil, nil
+	}
+
+	user, err := r.Resolver.UserService.GetUserByID(*obj.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertUserToGraphQL(user), nil
+}
+func (r *cleanerApplicationResolver) ReviewedBy(ctx context.Context, obj *model.CleanerApplication) (*model.User, error) {
+	// TODO: This field is populated during conversion, but we need to load the actual user object
+	// For now, return nil if not populated
+	return nil, nil
+}
+func (r *Resolver) CleanerApplication() generated.CleanerApplicationResolver {
+	return &cleanerApplicationResolver{r}
+}
+type cleanerApplicationResolver struct{ *Resolver }
+*/

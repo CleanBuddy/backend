@@ -180,6 +180,7 @@ type CleanerApplication struct {
 	ID                   string                  `json:"id"`
 	SessionID            *string                 `json:"sessionId,omitempty"`
 	UserID               *string                 `json:"userId,omitempty"`
+	User                 *User                   `json:"user,omitempty"`
 	CurrentStep          int                     `json:"currentStep"`
 	Status               ApplicationStatus       `json:"status"`
 	ApplicationData      *CleanerApplicationData `json:"applicationData"`

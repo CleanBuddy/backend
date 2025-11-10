@@ -995,6 +995,7 @@ type CleanerApplication {
   id: ID!
   sessionId: String
   userId: ID
+  user: User
   currentStep: Int!
   status: ApplicationStatus!
   applicationData: CleanerApplicationData!

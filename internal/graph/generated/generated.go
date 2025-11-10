@@ -211,6 +211,7 @@ type ComplexityRoot struct {
 		Status               func(childComplexity int) int
 		SubmittedAt          func(childComplexity int) int
 		UpdatedAt            func(childComplexity int) int
+		User                 func(childComplexity int) int
 		UserID               func(childComplexity int) int
 	}
 
@@ -1608,6 +1609,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CleanerApplication.UpdatedAt(childComplexity), true
+	case "CleanerApplication.user":
+		if e.complexity.CleanerApplication.User == nil {
+			break
+		}
+
+		return e.complexity.CleanerApplication.User(childComplexity), true
 	case "CleanerApplication.userId":
 		if e.complexity.CleanerApplication.UserID == nil {
 			break
@@ -5267,6 +5274,7 @@ type CleanerApplication {
   id: ID!
   sessionId: String
   userId: ID
+  user: User
   currentStep: Int!
   status: ApplicationStatus!
   applicationData: CleanerApplicationData!
@@ -10559,6 +10567,55 @@ func (ec *executionContext) fieldContext_CleanerApplication_userId(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CleanerApplication_user(ctx context.Context, field graphql.CollectedField, obj *model.CleanerApplication) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CleanerApplication_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalOUser2ᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CleanerApplication_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CleanerApplication",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_User_phone(ctx, field)
+			case "role":
+				return ec.fieldContext_User_role(ctx, field)
+			case "firstName":
+				return ec.fieldContext_User_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_User_lastName(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
+			case "client":
+				return ec.fieldContext_User_client(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -18955,6 +19012,8 @@ func (ec *executionContext) fieldContext_Mutation_saveCleanerApplication(ctx con
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -19026,6 +19085,8 @@ func (ec *executionContext) fieldContext_Mutation_submitCleanerApplication(ctx c
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -19097,6 +19158,8 @@ func (ec *executionContext) fieldContext_Mutation_reviewCleanerApplication(ctx c
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -25200,6 +25263,8 @@ func (ec *executionContext) fieldContext_Query_cleanerApplication(ctx context.Co
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -25270,6 +25335,8 @@ func (ec *executionContext) fieldContext_Query_myCleanerApplication(_ context.Co
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -25385,6 +25452,8 @@ func (ec *executionContext) fieldContext_Query_pendingApplications(ctx context.C
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -25455,6 +25524,8 @@ func (ec *executionContext) fieldContext_Query_pendingCleanerApplications(_ cont
 				return ec.fieldContext_CleanerApplication_sessionId(ctx, field)
 			case "userId":
 				return ec.fieldContext_CleanerApplication_userId(ctx, field)
+			case "user":
+				return ec.fieldContext_CleanerApplication_user(ctx, field)
 			case "currentStep":
 				return ec.fieldContext_CleanerApplication_currentStep(ctx, field)
 			case "status":
@@ -30380,6 +30451,8 @@ func (ec *executionContext) _CleanerApplication(ctx context.Context, sel ast.Sel
 			out.Values[i] = ec._CleanerApplication_sessionId(ctx, field, obj)
 		case "userId":
 			out.Values[i] = ec._CleanerApplication_userId(ctx, field, obj)
+		case "user":
+			out.Values[i] = ec._CleanerApplication_user(ctx, field, obj)
 		case "currentStep":
 			out.Values[i] = ec._CleanerApplication_currentStep(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
