@@ -238,20 +238,26 @@ type Client struct {
 }
 
 type Company struct {
-	ID                 string                `json:"id"`
-	Name               string                `json:"name"`
-	Cui                string                `json:"cui"`
-	RegistrationNumber *string               `json:"registrationNumber,omitempty"`
-	Iban               *string               `json:"iban,omitempty"`
-	BankName           *string               `json:"bankName,omitempty"`
-	LegalAddress       *string               `json:"legalAddress,omitempty"`
-	ContactEmail       *string               `json:"contactEmail,omitempty"`
-	ContactPhone       *string               `json:"contactPhone,omitempty"`
-	ApprovalStatus     CompanyApprovalStatus `json:"approvalStatus"`
-	RejectedReason     *string               `json:"rejectedReason,omitempty"`
-	IsActive           bool                  `json:"isActive"`
-	CreatedAt          time.Time             `json:"createdAt"`
-	UpdatedAt          time.Time             `json:"updatedAt"`
+	ID                           string                `json:"id"`
+	Name                         string                `json:"name"`
+	Cui                          string                `json:"cui"`
+	RegistrationNumber           *string               `json:"registrationNumber,omitempty"`
+	Iban                         *string               `json:"iban,omitempty"`
+	BankName                     *string               `json:"bankName,omitempty"`
+	LegalAddress                 *string               `json:"legalAddress,omitempty"`
+	ContactEmail                 *string               `json:"contactEmail,omitempty"`
+	ContactPhone                 *string               `json:"contactPhone,omitempty"`
+	IDDocumentURL                *string               `json:"idDocumentURL,omitempty"`
+	RegistrationDocumentURL      *string               `json:"registrationDocumentURL,omitempty"`
+	IDDocumentVerified           bool                  `json:"idDocumentVerified"`
+	RegistrationDocumentVerified bool                  `json:"registrationDocumentVerified"`
+	ApprovalStatus               CompanyApprovalStatus `json:"approvalStatus"`
+	RejectedReason               *string               `json:"rejectedReason,omitempty"`
+	ApprovedBy                   *string               `json:"approvedBy,omitempty"`
+	ApprovedAt                   *time.Time            `json:"approvedAt,omitempty"`
+	IsActive                     bool                  `json:"isActive"`
+	CreatedAt                    time.Time             `json:"createdAt"`
+	UpdatedAt                    time.Time             `json:"updatedAt"`
 }
 
 type CompanyCleaner struct {
@@ -556,6 +562,13 @@ type PlatformSettings struct {
 	AutoApprovalEnabled       bool      `json:"autoApprovalEnabled"`
 	MaintenanceMode           bool      `json:"maintenanceMode"`
 	UpdatedAt                 time.Time `json:"updatedAt"`
+}
+
+type PlatformStats struct {
+	TotalCleaners int     `json:"totalCleaners"`
+	TotalBookings int     `json:"totalBookings"`
+	AverageRating float64 `json:"averageRating"`
+	CitiesServed  int     `json:"citiesServed"`
 }
 
 type PriceBreakdown struct {

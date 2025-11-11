@@ -279,8 +279,14 @@ type Company {
   legalAddress: String
   contactEmail: String
   contactPhone: String
+  idDocumentURL: String
+  registrationDocumentURL: String
+  idDocumentVerified: Boolean!
+  registrationDocumentVerified: Boolean!
   approvalStatus: CompanyApprovalStatus!
   rejectedReason: String
+  approvedBy: String
+  approvedAt: Time
   isActive: Boolean!
   createdAt: Time!
   updatedAt: Time!
@@ -722,6 +728,14 @@ type TopCleanerStat {
   averageRating: Float
 }
 
+# Platform Statistics (Public - for landing page)
+type PlatformStats {
+  totalCleaners: Int!
+  totalBookings: Int!
+  averageRating: Float!
+  citiesServed: Int!
+}
+
 # Platform Settings (Admin Configuration)
 type PlatformSettings {
   id: ID!
@@ -850,6 +864,8 @@ type Query {
   # Admin queries
   cleaners(limit: Int, offset: Int, status: ApprovalStatus, search: String): [Cleaner!]!
   companies(limit: Int, offset: Int, status: CompanyApprovalStatus, search: String): [Company!]!
+  pendingCleaners: [Cleaner!]!
+  pendingCompanies: [Company!]!
   platformSettings: PlatformSettings!
 
   # Admin cleaner management
@@ -861,6 +877,9 @@ type Query {
   # Admin analytics
   adminKPIs(period: KPIPeriod!): AdminKPIs!
   allBookingsAdmin(limit: Int, offset: Int, status: BookingStatus, search: String): [Booking!]!
+
+  # Public statistics (for landing page, no auth required)
+  platformStats: PlatformStats!
 
   # ============================================
   # BOOKING PRICE CALCULATION (Anonymous + Authenticated)
@@ -885,6 +904,7 @@ type Mutation {
   requestOtp(email: String!): Boolean!
   loginWithOtp(email: String!, code: String!): Session!
   loginAsCleanerWithOtp(email: String!, code: String!): Session!
+  loginAsCompanyWithOtp(email: String!, code: String!): Session!
   logout: Boolean!
 
   # Client profile management

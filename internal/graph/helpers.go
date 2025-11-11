@@ -398,6 +398,9 @@ func convertAvailabilityToGraphQL(availability *models.Availability) *model.Avai
 func convertCompanyToGraphQL(company *models.Company) *model.Company {
 	var registrationNumber, iban, bankName, legalAddress *string
 	var contactEmail, contactPhone, rejectedReason *string
+	var idDocumentURL, registrationDocumentURL *string
+	var approvedBy *string
+	var approvedAt *time.Time
 
 	if company.RegistrationNumber.Valid {
 		registrationNumber = &company.RegistrationNumber.String
@@ -427,22 +430,40 @@ func convertCompanyToGraphQL(company *models.Company) *model.Company {
 	if company.RejectedReason.Valid {
 		rejectedReason = &company.RejectedReason.String
 	}
+	if company.IDDocumentURL.Valid {
+		idDocumentURL = &company.IDDocumentURL.String
+	}
+	if company.RegistrationDocumentURL.Valid {
+		registrationDocumentURL = &company.RegistrationDocumentURL.String
+	}
+	if company.ApprovedBy.Valid {
+		approvedBy = &company.ApprovedBy.String
+	}
+	if company.ApprovedAt.Valid {
+		approvedAt = &company.ApprovedAt.Time
+	}
 
 	return &model.Company{
-		ID:                 company.ID,
-		Name:               company.Name,
-		Cui:                company.CUI,
-		RegistrationNumber: registrationNumber,
-		Iban:               iban,
-		BankName:           bankName,
-		LegalAddress:       legalAddress,
-		ContactEmail:       contactEmail,
-		ContactPhone:       contactPhone,
-		ApprovalStatus:     model.CompanyApprovalStatus(company.ApprovalStatus),
-		RejectedReason:     rejectedReason,
-		IsActive:           company.IsActive,
-		CreatedAt:          company.CreatedAt,
-		UpdatedAt:          company.UpdatedAt,
+		ID:                          company.ID,
+		Name:                        company.Name,
+		Cui:                         company.CUI,
+		RegistrationNumber:          registrationNumber,
+		Iban:                        iban,
+		BankName:                    bankName,
+		LegalAddress:                legalAddress,
+		ContactEmail:                contactEmail,
+		ContactPhone:                contactPhone,
+		IDDocumentURL:               idDocumentURL,
+		RegistrationDocumentURL:     registrationDocumentURL,
+		IDDocumentVerified:          company.IDDocumentVerified,
+		RegistrationDocumentVerified: company.RegistrationDocumentVerified,
+		ApprovalStatus:              model.CompanyApprovalStatus(company.ApprovalStatus),
+		RejectedReason:              rejectedReason,
+		ApprovedBy:                  approvedBy,
+		ApprovedAt:                  approvedAt,
+		IsActive:                    company.IsActive,
+		CreatedAt:                   company.CreatedAt,
+		UpdatedAt:                   company.UpdatedAt,
 	}
 }
 

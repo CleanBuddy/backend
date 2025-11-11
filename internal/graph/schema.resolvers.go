@@ -110,6 +110,24 @@ func (r *mutationResolver) LoginAsCleanerWithOtp(ctx context.Context, email stri
 	}, nil
 }
 
+// LoginAsCompanyWithOtp is the resolver for the loginAsCompanyWithOtp field.
+func (r *mutationResolver) LoginAsCompanyWithOtp(ctx context.Context, email string, code string) (*model.Session, error) {
+	token, user, err := r.AuthService.LoginWithOTPWithRole(ctx, email, code, models.RoleCompanyAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set httpOnly cookie for secure JWT storage
+	if w, ok := middleware.GetResponseWriter(ctx); ok {
+		setAuthCookie(w, token)
+	}
+
+	return &model.Session{
+		Token: token,
+		User:  convertUserToGraphQL(user),
+	}, nil
+}
+
 // Logout is the resolver for the logout field.
 func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 	// Clear the auth cookie
@@ -2380,6 +2398,48 @@ func (r *queryResolver) Companies(ctx context.Context, limit *int, offset *int, 
 	return result, nil
 }
 
+// PendingCleaners is the resolver for the pendingCleaners field.
+func (r *queryResolver) PendingCleaners(ctx context.Context) ([]*model.Cleaner, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaners, err := r.CleanerService.GetPendingCleaners()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.Cleaner
+	for _, cleaner := range cleaners {
+		result = append(result, convertCleanerToGraphQL(cleaner))
+	}
+
+	return result, nil
+}
+
+// PendingCompanies is the resolver for the pendingCompanies field.
+func (r *queryResolver) PendingCompanies(ctx context.Context) ([]*model.Company, error) {
+	// Require admin authorization
+	_, err := middleware.RequireAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	companies, err := r.CompanyService.GetPendingCompanies()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.Company
+	for _, company := range companies {
+		result = append(result, convertCompanyToGraphQL(company))
+	}
+
+	return result, nil
+}
+
 // PlatformSettings is the resolver for the platformSettings field.
 func (r *queryResolver) PlatformSettings(ctx context.Context) (*model.PlatformSettings, error) {
 	// Require admin authorization
@@ -2539,6 +2599,16 @@ func (r *queryResolver) AllBookingsAdmin(ctx context.Context, limit *int, offset
 	}
 
 	return result, nil
+}
+
+// PlatformStats is the resolver for the platformStats field.
+func (r *queryResolver) PlatformStats(ctx context.Context) (*model.PlatformStats, error) {
+	// This is a public endpoint - no authentication required for landing page stats
+	stats, err := r.AdminAnalyticsService.GetPlatformStats()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platform stats: %w", err)
+	}
+	return stats, nil
 }
 
 // CalculateBookingPrice is the resolver for the calculateBookingPrice field.

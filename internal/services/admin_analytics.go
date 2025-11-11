@@ -308,3 +308,63 @@ func (s *AdminAnalyticsService) GetAllBookingsAdmin(limit, offset int, status *m
 
 	return bookings, nil
 }
+
+// GetPlatformStats returns platform-wide statistics for the landing page
+// This is a public endpoint (no auth required)
+func (s *AdminAnalyticsService) GetPlatformStats() (*graphmodel.PlatformStats, error) {
+	stats := &graphmodel.PlatformStats{}
+
+	// Get total approved cleaners
+	err := s.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM cleaners
+		WHERE approval_status = 'APPROVED'
+	`).Scan(&stats.TotalCleaners)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count cleaners: %w", err)
+	}
+
+	// Get total completed bookings
+	err = s.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM bookings
+		WHERE status = 'COMPLETED'
+	`).Scan(&stats.TotalBookings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count bookings: %w", err)
+	}
+
+	// Get average rating from completed bookings with cleaner ratings
+	var avgRating sql.NullFloat64
+	err = s.db.QueryRow(`
+		SELECT AVG(cleaner_rating)
+		FROM bookings
+		WHERE cleaner_rating IS NOT NULL
+		AND cleaner_rating > 0
+	`).Scan(&avgRating)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate average rating: %w", err)
+	}
+
+	if avgRating.Valid {
+		stats.AverageRating = avgRating.Float64
+	} else {
+		stats.AverageRating = 0.0
+	}
+
+	// Get count of distinct cities served (from bookings)
+	err = s.db.QueryRow(`
+		SELECT COUNT(DISTINCT city)
+		FROM addresses
+		WHERE id IN (
+			SELECT DISTINCT address_id
+			FROM bookings
+			WHERE status IN ('COMPLETED', 'IN_PROGRESS', 'CONFIRMED')
+		)
+	`).Scan(&stats.CitiesServed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count cities: %w", err)
+	}
+
+	return stats, nil
+}

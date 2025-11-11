@@ -248,20 +248,26 @@ type ComplexityRoot struct {
 	}
 
 	Company struct {
-		ApprovalStatus     func(childComplexity int) int
-		BankName           func(childComplexity int) int
-		ContactEmail       func(childComplexity int) int
-		ContactPhone       func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
-		Cui                func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Iban               func(childComplexity int) int
-		IsActive           func(childComplexity int) int
-		LegalAddress       func(childComplexity int) int
-		Name               func(childComplexity int) int
-		RegistrationNumber func(childComplexity int) int
-		RejectedReason     func(childComplexity int) int
-		UpdatedAt          func(childComplexity int) int
+		ApprovalStatus               func(childComplexity int) int
+		ApprovedAt                   func(childComplexity int) int
+		ApprovedBy                   func(childComplexity int) int
+		BankName                     func(childComplexity int) int
+		ContactEmail                 func(childComplexity int) int
+		ContactPhone                 func(childComplexity int) int
+		CreatedAt                    func(childComplexity int) int
+		Cui                          func(childComplexity int) int
+		ID                           func(childComplexity int) int
+		IDDocumentURL                func(childComplexity int) int
+		IDDocumentVerified           func(childComplexity int) int
+		Iban                         func(childComplexity int) int
+		IsActive                     func(childComplexity int) int
+		LegalAddress                 func(childComplexity int) int
+		Name                         func(childComplexity int) int
+		RegistrationDocumentURL      func(childComplexity int) int
+		RegistrationDocumentVerified func(childComplexity int) int
+		RegistrationNumber           func(childComplexity int) int
+		RejectedReason               func(childComplexity int) int
+		UpdatedAt                    func(childComplexity int) int
 	}
 
 	CompanyCleaner struct {
@@ -409,6 +415,7 @@ type ComplexityRoot struct {
 		DeletePhoto               func(childComplexity int, id string) int
 		GenerateMonthlyPayouts    func(childComplexity int, input model.GeneratePayoutsInput) int
 		LoginAsCleanerWithOtp     func(childComplexity int, email string, code string) int
+		LoginAsCompanyWithOtp     func(childComplexity int, email string, code string) int
 		LoginWithOtp              func(childComplexity int, email string, code string) int
 		Logout                    func(childComplexity int) int
 		MarkMessagesAsRead        func(childComplexity int, bookingID string) int
@@ -526,6 +533,13 @@ type ComplexityRoot struct {
 		WeekendMultiplier         func(childComplexity int) int
 	}
 
+	PlatformStats struct {
+		AverageRating func(childComplexity int) int
+		CitiesServed  func(childComplexity int) int
+		TotalBookings func(childComplexity int) int
+		TotalCleaners func(childComplexity int) int
+	}
+
 	PriceBreakdown struct {
 		AreaPrice             func(childComplexity int) int
 		BasePricePerHour      func(childComplexity int) int
@@ -607,9 +621,12 @@ type ComplexityRoot struct {
 		Payouts                    func(childComplexity int, status *model.PayoutStatus, limit *int, offset *int) int
 		PendingApplications        func(childComplexity int, limit *int, offset *int) int
 		PendingCleanerApplications func(childComplexity int) int
+		PendingCleaners            func(childComplexity int) int
+		PendingCompanies           func(childComplexity int) int
 		PendingPayouts             func(childComplexity int) int
 		Ping                       func(childComplexity int) int
 		PlatformSettings           func(childComplexity int) int
+		PlatformStats              func(childComplexity int) int
 		ReviewByBooking            func(childComplexity int, bookingID string) int
 		UnreadMessagesCount        func(childComplexity int) int
 		User                       func(childComplexity int, id string) int
@@ -664,6 +681,7 @@ type MutationResolver interface {
 	RequestOtp(ctx context.Context, email string) (bool, error)
 	LoginWithOtp(ctx context.Context, email string, code string) (*model.Session, error)
 	LoginAsCleanerWithOtp(ctx context.Context, email string, code string) (*model.Session, error)
+	LoginAsCompanyWithOtp(ctx context.Context, email string, code string) (*model.Session, error)
 	Logout(ctx context.Context) (bool, error)
 	UpdateClientProfile(ctx context.Context, input model.UpdateClientProfileInput) (*model.Client, error)
 	CreateAddress(ctx context.Context, input model.CreateAddressInput) (*model.Address, error)
@@ -769,6 +787,8 @@ type QueryResolver interface {
 	CompanyInvoices(ctx context.Context, companyID string) ([]*model.Invoice, error)
 	Cleaners(ctx context.Context, limit *int, offset *int, status *model.ApprovalStatus, search *string) ([]*model.Cleaner, error)
 	Companies(ctx context.Context, limit *int, offset *int, status *model.CompanyApprovalStatus, search *string) ([]*model.Company, error)
+	PendingCleaners(ctx context.Context) ([]*model.Cleaner, error)
+	PendingCompanies(ctx context.Context) ([]*model.Company, error)
 	PlatformSettings(ctx context.Context) (*model.PlatformSettings, error)
 	CleanerStats(ctx context.Context, cleanerID string) (*model.CleanerStats, error)
 	CleanerAvailability(ctx context.Context, cleanerID string) ([]*model.Availability, error)
@@ -776,6 +796,7 @@ type QueryResolver interface {
 	CleanerPayouts(ctx context.Context, cleanerID string, limit *int) ([]*model.Payout, error)
 	AdminKPIs(ctx context.Context, period model.KPIPeriod) (*model.AdminKPIs, error)
 	AllBookingsAdmin(ctx context.Context, limit *int, offset *int, status *model.BookingStatus, search *string) ([]*model.Booking, error)
+	PlatformStats(ctx context.Context) (*model.PlatformStats, error)
 	CalculateBookingPrice(ctx context.Context, input model.PriceCalculationInput) (*model.PriceQuote, error)
 	CleanerApplication(ctx context.Context, sessionID string) (*model.CleanerApplication, error)
 	MyCleanerApplication(ctx context.Context) (*model.CleanerApplication, error)
@@ -1799,6 +1820,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Company.ApprovalStatus(childComplexity), true
+	case "Company.approvedAt":
+		if e.complexity.Company.ApprovedAt == nil {
+			break
+		}
+
+		return e.complexity.Company.ApprovedAt(childComplexity), true
+	case "Company.approvedBy":
+		if e.complexity.Company.ApprovedBy == nil {
+			break
+		}
+
+		return e.complexity.Company.ApprovedBy(childComplexity), true
 	case "Company.bankName":
 		if e.complexity.Company.BankName == nil {
 			break
@@ -1835,6 +1868,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Company.ID(childComplexity), true
+	case "Company.idDocumentURL":
+		if e.complexity.Company.IDDocumentURL == nil {
+			break
+		}
+
+		return e.complexity.Company.IDDocumentURL(childComplexity), true
+	case "Company.idDocumentVerified":
+		if e.complexity.Company.IDDocumentVerified == nil {
+			break
+		}
+
+		return e.complexity.Company.IDDocumentVerified(childComplexity), true
 	case "Company.iban":
 		if e.complexity.Company.Iban == nil {
 			break
@@ -1859,6 +1904,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Company.Name(childComplexity), true
+	case "Company.registrationDocumentURL":
+		if e.complexity.Company.RegistrationDocumentURL == nil {
+			break
+		}
+
+		return e.complexity.Company.RegistrationDocumentURL(childComplexity), true
+	case "Company.registrationDocumentVerified":
+		if e.complexity.Company.RegistrationDocumentVerified == nil {
+			break
+		}
+
+		return e.complexity.Company.RegistrationDocumentVerified(childComplexity), true
 	case "Company.registrationNumber":
 		if e.complexity.Company.RegistrationNumber == nil {
 			break
@@ -2739,6 +2796,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.LoginAsCleanerWithOtp(childComplexity, args["email"].(string), args["code"].(string)), true
+	case "Mutation.loginAsCompanyWithOtp":
+		if e.complexity.Mutation.LoginAsCompanyWithOtp == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_loginAsCompanyWithOtp_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LoginAsCompanyWithOtp(childComplexity, args["email"].(string), args["code"].(string)), true
 	case "Mutation.loginWithOtp":
 		if e.complexity.Mutation.LoginWithOtp == nil {
 			break
@@ -3505,6 +3573,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PlatformSettings.WeekendMultiplier(childComplexity), true
 
+	case "PlatformStats.averageRating":
+		if e.complexity.PlatformStats.AverageRating == nil {
+			break
+		}
+
+		return e.complexity.PlatformStats.AverageRating(childComplexity), true
+	case "PlatformStats.citiesServed":
+		if e.complexity.PlatformStats.CitiesServed == nil {
+			break
+		}
+
+		return e.complexity.PlatformStats.CitiesServed(childComplexity), true
+	case "PlatformStats.totalBookings":
+		if e.complexity.PlatformStats.TotalBookings == nil {
+			break
+		}
+
+		return e.complexity.PlatformStats.TotalBookings(childComplexity), true
+	case "PlatformStats.totalCleaners":
+		if e.complexity.PlatformStats.TotalCleaners == nil {
+			break
+		}
+
+		return e.complexity.PlatformStats.TotalCleaners(childComplexity), true
+
 	case "PriceBreakdown.areaPrice":
 		if e.complexity.PriceBreakdown.AreaPrice == nil {
 			break
@@ -4129,6 +4222,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PendingCleanerApplications(childComplexity), true
+	case "Query.pendingCleaners":
+		if e.complexity.Query.PendingCleaners == nil {
+			break
+		}
+
+		return e.complexity.Query.PendingCleaners(childComplexity), true
+	case "Query.pendingCompanies":
+		if e.complexity.Query.PendingCompanies == nil {
+			break
+		}
+
+		return e.complexity.Query.PendingCompanies(childComplexity), true
 	case "Query.pendingPayouts":
 		if e.complexity.Query.PendingPayouts == nil {
 			break
@@ -4147,6 +4252,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PlatformSettings(childComplexity), true
+	case "Query.platformStats":
+		if e.complexity.Query.PlatformStats == nil {
+			break
+		}
+
+		return e.complexity.Query.PlatformStats(childComplexity), true
 	case "Query.reviewByBooking":
 		if e.complexity.Query.ReviewByBooking == nil {
 			break
@@ -4742,8 +4853,14 @@ type Company {
   legalAddress: String
   contactEmail: String
   contactPhone: String
+  idDocumentURL: String
+  registrationDocumentURL: String
+  idDocumentVerified: Boolean!
+  registrationDocumentVerified: Boolean!
   approvalStatus: CompanyApprovalStatus!
   rejectedReason: String
+  approvedBy: String
+  approvedAt: Time
   isActive: Boolean!
   createdAt: Time!
   updatedAt: Time!
@@ -5185,6 +5302,14 @@ type TopCleanerStat {
   averageRating: Float
 }
 
+# Platform Statistics (Public - for landing page)
+type PlatformStats {
+  totalCleaners: Int!
+  totalBookings: Int!
+  averageRating: Float!
+  citiesServed: Int!
+}
+
 # Platform Settings (Admin Configuration)
 type PlatformSettings {
   id: ID!
@@ -5313,6 +5438,8 @@ type Query {
   # Admin queries
   cleaners(limit: Int, offset: Int, status: ApprovalStatus, search: String): [Cleaner!]!
   companies(limit: Int, offset: Int, status: CompanyApprovalStatus, search: String): [Company!]!
+  pendingCleaners: [Cleaner!]!
+  pendingCompanies: [Company!]!
   platformSettings: PlatformSettings!
 
   # Admin cleaner management
@@ -5324,6 +5451,9 @@ type Query {
   # Admin analytics
   adminKPIs(period: KPIPeriod!): AdminKPIs!
   allBookingsAdmin(limit: Int, offset: Int, status: BookingStatus, search: String): [Booking!]!
+
+  # Public statistics (for landing page, no auth required)
+  platformStats: PlatformStats!
 
   # ============================================
   # BOOKING PRICE CALCULATION (Anonymous + Authenticated)
@@ -5348,6 +5478,7 @@ type Mutation {
   requestOtp(email: String!): Boolean!
   loginWithOtp(email: String!, code: String!): Session!
   loginAsCleanerWithOtp(email: String!, code: String!): Session!
+  loginAsCompanyWithOtp(email: String!, code: String!): Session!
   logout: Boolean!
 
   # Client profile management
@@ -5998,6 +6129,22 @@ func (ec *executionContext) field_Mutation_generateMonthlyPayouts_args(ctx conte
 }
 
 func (ec *executionContext) field_Mutation_loginAsCleanerWithOtp_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "code", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["code"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_loginAsCompanyWithOtp_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email", ec.unmarshalNString2string)
@@ -12281,6 +12428,122 @@ func (ec *executionContext) fieldContext_Company_contactPhone(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Company_idDocumentURL(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_idDocumentURL,
+		func(ctx context.Context) (any, error) {
+			return obj.IDDocumentURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_idDocumentURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_registrationDocumentURL(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_registrationDocumentURL,
+		func(ctx context.Context) (any, error) {
+			return obj.RegistrationDocumentURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_registrationDocumentURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_idDocumentVerified(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_idDocumentVerified,
+		func(ctx context.Context) (any, error) {
+			return obj.IDDocumentVerified, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_idDocumentVerified(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_registrationDocumentVerified(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_registrationDocumentVerified,
+		func(ctx context.Context) (any, error) {
+			return obj.RegistrationDocumentVerified, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_registrationDocumentVerified(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Company_approvalStatus(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12334,6 +12597,64 @@ func (ec *executionContext) fieldContext_Company_rejectedReason(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_approvedBy(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_approvedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_approvedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_approvedAt(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Company_approvedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Company_approvedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -15276,6 +15597,53 @@ func (ec *executionContext) fieldContext_Mutation_loginAsCleanerWithOtp(ctx cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_loginAsCompanyWithOtp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_loginAsCompanyWithOtp,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().LoginAsCompanyWithOtp(ctx, fc.Args["email"].(string), fc.Args["code"].(string))
+		},
+		nil,
+		ec.marshalNSession2ᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐSession,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_loginAsCompanyWithOtp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_Session_token(ctx, field)
+			case "user":
+				return ec.fieldContext_Session_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Session", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_loginAsCompanyWithOtp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17337,10 +17705,22 @@ func (ec *executionContext) fieldContext_Mutation_createCompany(ctx context.Cont
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -17408,10 +17788,22 @@ func (ec *executionContext) fieldContext_Mutation_updateCompany(ctx context.Cont
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -17577,10 +17969,22 @@ func (ec *executionContext) fieldContext_Mutation_uploadCompanyDocument(ctx cont
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -17838,10 +18242,22 @@ func (ec *executionContext) fieldContext_Mutation_approveCompany(ctx context.Con
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -17909,10 +18325,22 @@ func (ec *executionContext) fieldContext_Mutation_rejectCompany(ctx context.Cont
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -22135,6 +22563,122 @@ func (ec *executionContext) fieldContext_PlatformSettings_updatedAt(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _PlatformStats_totalCleaners(ctx context.Context, field graphql.CollectedField, obj *model.PlatformStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PlatformStats_totalCleaners,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCleaners, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PlatformStats_totalCleaners(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformStats_totalBookings(ctx context.Context, field graphql.CollectedField, obj *model.PlatformStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PlatformStats_totalBookings,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalBookings, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PlatformStats_totalBookings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformStats_averageRating(ctx context.Context, field graphql.CollectedField, obj *model.PlatformStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PlatformStats_averageRating,
+		func(ctx context.Context) (any, error) {
+			return obj.AverageRating, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PlatformStats_averageRating(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformStats_citiesServed(ctx context.Context, field graphql.CollectedField, obj *model.PlatformStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PlatformStats_citiesServed,
+		func(ctx context.Context) (any, error) {
+			return obj.CitiesServed, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PlatformStats_citiesServed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PriceBreakdown_basePricePerHour(ctx context.Context, field graphql.CollectedField, obj *model.PriceBreakdown) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -25359,10 +25903,22 @@ func (ec *executionContext) fieldContext_Query_myCompanies(_ context.Context, fi
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -25419,10 +25975,22 @@ func (ec *executionContext) fieldContext_Query_company(ctx context.Context, fiel
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -25929,10 +26497,22 @@ func (ec *executionContext) fieldContext_Query_companies(ctx context.Context, fi
 				return ec.fieldContext_Company_contactEmail(ctx, field)
 			case "contactPhone":
 				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
 			case "approvalStatus":
 				return ec.fieldContext_Company_approvalStatus(ctx, field)
 			case "rejectedReason":
 				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
 			case "isActive":
 				return ec.fieldContext_Company_isActive(ctx, field)
 			case "createdAt":
@@ -25953,6 +26533,160 @@ func (ec *executionContext) fieldContext_Query_companies(ctx context.Context, fi
 	if fc.Args, err = ec.field_Query_companies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_pendingCleaners(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_pendingCleaners,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PendingCleaners(ctx)
+		},
+		nil,
+		ec.marshalNCleaner2ᚕᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐCleanerᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_pendingCleaners(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Cleaner_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_Cleaner_userId(ctx, field)
+			case "phoneNumber":
+				return ec.fieldContext_Cleaner_phoneNumber(ctx, field)
+			case "dateOfBirth":
+				return ec.fieldContext_Cleaner_dateOfBirth(ctx, field)
+			case "streetAddress":
+				return ec.fieldContext_Cleaner_streetAddress(ctx, field)
+			case "city":
+				return ec.fieldContext_Cleaner_city(ctx, field)
+			case "county":
+				return ec.fieldContext_Cleaner_county(ctx, field)
+			case "postalCode":
+				return ec.fieldContext_Cleaner_postalCode(ctx, field)
+			case "yearsOfExperience":
+				return ec.fieldContext_Cleaner_yearsOfExperience(ctx, field)
+			case "bio":
+				return ec.fieldContext_Cleaner_bio(ctx, field)
+			case "specializations":
+				return ec.fieldContext_Cleaner_specializations(ctx, field)
+			case "languages":
+				return ec.fieldContext_Cleaner_languages(ctx, field)
+			case "iban":
+				return ec.fieldContext_Cleaner_iban(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Cleaner_idDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Cleaner_idDocumentVerified(ctx, field)
+			case "backgroundCheckURL":
+				return ec.fieldContext_Cleaner_backgroundCheckURL(ctx, field)
+			case "backgroundCheckVerified":
+				return ec.fieldContext_Cleaner_backgroundCheckVerified(ctx, field)
+			case "profilePhotoURL":
+				return ec.fieldContext_Cleaner_profilePhotoURL(ctx, field)
+			case "averageRating":
+				return ec.fieldContext_Cleaner_averageRating(ctx, field)
+			case "totalJobs":
+				return ec.fieldContext_Cleaner_totalJobs(ctx, field)
+			case "totalEarnings":
+				return ec.fieldContext_Cleaner_totalEarnings(ctx, field)
+			case "approvalStatus":
+				return ec.fieldContext_Cleaner_approvalStatus(ctx, field)
+			case "isActive":
+				return ec.fieldContext_Cleaner_isActive(ctx, field)
+			case "isAvailable":
+				return ec.fieldContext_Cleaner_isAvailable(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Cleaner_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Cleaner_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Cleaner", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_pendingCompanies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_pendingCompanies,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PendingCompanies(ctx)
+		},
+		nil,
+		ec.marshalNCompany2ᚕᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐCompanyᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_pendingCompanies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Company_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Company_name(ctx, field)
+			case "cui":
+				return ec.fieldContext_Company_cui(ctx, field)
+			case "registrationNumber":
+				return ec.fieldContext_Company_registrationNumber(ctx, field)
+			case "iban":
+				return ec.fieldContext_Company_iban(ctx, field)
+			case "bankName":
+				return ec.fieldContext_Company_bankName(ctx, field)
+			case "legalAddress":
+				return ec.fieldContext_Company_legalAddress(ctx, field)
+			case "contactEmail":
+				return ec.fieldContext_Company_contactEmail(ctx, field)
+			case "contactPhone":
+				return ec.fieldContext_Company_contactPhone(ctx, field)
+			case "idDocumentURL":
+				return ec.fieldContext_Company_idDocumentURL(ctx, field)
+			case "registrationDocumentURL":
+				return ec.fieldContext_Company_registrationDocumentURL(ctx, field)
+			case "idDocumentVerified":
+				return ec.fieldContext_Company_idDocumentVerified(ctx, field)
+			case "registrationDocumentVerified":
+				return ec.fieldContext_Company_registrationDocumentVerified(ctx, field)
+			case "approvalStatus":
+				return ec.fieldContext_Company_approvalStatus(ctx, field)
+			case "rejectedReason":
+				return ec.fieldContext_Company_rejectedReason(ctx, field)
+			case "approvedBy":
+				return ec.fieldContext_Company_approvedBy(ctx, field)
+			case "approvedAt":
+				return ec.fieldContext_Company_approvedAt(ctx, field)
+			case "isActive":
+				return ec.fieldContext_Company_isActive(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Company_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Company_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -26532,6 +27266,45 @@ func (ec *executionContext) fieldContext_Query_allBookingsAdmin(ctx context.Cont
 	if fc.Args, err = ec.field_Query_allBookingsAdmin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_platformStats(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_platformStats,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PlatformStats(ctx)
+		},
+		nil,
+		ec.marshalNPlatformStats2ᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐPlatformStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_platformStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCleaners":
+				return ec.fieldContext_PlatformStats_totalCleaners(ctx, field)
+			case "totalBookings":
+				return ec.fieldContext_PlatformStats_totalBookings(ctx, field)
+			case "averageRating":
+				return ec.fieldContext_PlatformStats_averageRating(ctx, field)
+			case "citiesServed":
+				return ec.fieldContext_PlatformStats_citiesServed(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlatformStats", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -32103,6 +32876,20 @@ func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Company_contactEmail(ctx, field, obj)
 		case "contactPhone":
 			out.Values[i] = ec._Company_contactPhone(ctx, field, obj)
+		case "idDocumentURL":
+			out.Values[i] = ec._Company_idDocumentURL(ctx, field, obj)
+		case "registrationDocumentURL":
+			out.Values[i] = ec._Company_registrationDocumentURL(ctx, field, obj)
+		case "idDocumentVerified":
+			out.Values[i] = ec._Company_idDocumentVerified(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "registrationDocumentVerified":
+			out.Values[i] = ec._Company_registrationDocumentVerified(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "approvalStatus":
 			out.Values[i] = ec._Company_approvalStatus(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -32110,6 +32897,10 @@ func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "rejectedReason":
 			out.Values[i] = ec._Company_rejectedReason(ctx, field, obj)
+		case "approvedBy":
+			out.Values[i] = ec._Company_approvedBy(ctx, field, obj)
+		case "approvedAt":
+			out.Values[i] = ec._Company_approvedAt(ctx, field, obj)
 		case "isActive":
 			out.Values[i] = ec._Company_isActive(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -32838,6 +33629,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "loginAsCleanerWithOtp":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_loginAsCleanerWithOtp(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "loginAsCompanyWithOtp":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_loginAsCompanyWithOtp(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -33713,6 +34511,60 @@ func (ec *executionContext) _PlatformSettings(ctx context.Context, sel ast.Selec
 			}
 		case "updatedAt":
 			out.Values[i] = ec._PlatformSettings_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var platformStatsImplementors = []string{"PlatformStats"}
+
+func (ec *executionContext) _PlatformStats(ctx context.Context, sel ast.SelectionSet, obj *model.PlatformStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, platformStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlatformStats")
+		case "totalCleaners":
+			out.Values[i] = ec._PlatformStats_totalCleaners(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalBookings":
+			out.Values[i] = ec._PlatformStats_totalBookings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "averageRating":
+			out.Values[i] = ec._PlatformStats_averageRating(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "citiesServed":
+			out.Values[i] = ec._PlatformStats_citiesServed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -34860,6 +35712,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "pendingCleaners":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pendingCleaners(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "pendingCompanies":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pendingCompanies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "platformSettings":
 			field := field
 
@@ -35002,6 +35898,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_allBookingsAdmin(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "platformStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_platformStats(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -36944,6 +37862,20 @@ func (ec *executionContext) marshalNPlatformSettings2ᚖgithubᚗcomᚋcleanbudd
 		return graphql.Null
 	}
 	return ec._PlatformSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPlatformStats2githubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐPlatformStats(ctx context.Context, sel ast.SelectionSet, v model.PlatformStats) graphql.Marshaler {
+	return ec._PlatformStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPlatformStats2ᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐPlatformStats(ctx context.Context, sel ast.SelectionSet, v *model.PlatformStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlatformStats(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPriceBreakdown2ᚖgithubᚗcomᚋcleanbuddyᚋbackendᚋinternalᚋgraphᚋmodelᚐPriceBreakdown(ctx context.Context, sel ast.SelectionSet, v *model.PriceBreakdown) graphql.Marshaler {
