@@ -46,24 +46,29 @@ func main() {
 	defer database.Close()
 	log.Println("✅ Connected to PostgreSQL database")
 
-	// Initialize Redis client
+	// Initialize Redis client (optional)
+	var redisClient *redis.Client
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		redisURL = "redis://localhost:6379"
 	}
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
-		log.Fatalf("Failed to parse Redis URL: %v", err)
-	}
-	redisClient := redis.NewClient(opt)
+		log.Printf("⚠️  Failed to parse Redis URL: %v (falling back to in-memory storage)", err)
+	} else {
+		redisClient = redis.NewClient(opt)
 
-	// Test Redis connection
-	ctx := context.Background()
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		// Test Redis connection (non-fatal)
+		ctx := context.Background()
+		if err := redisClient.Ping(ctx).Err(); err != nil {
+			log.Printf("⚠️  Failed to connect to Redis: %v (falling back to in-memory storage)", err)
+			redisClient.Close()
+			redisClient = nil
+		} else {
+			defer redisClient.Close()
+			log.Println("✅ Connected to Redis")
+		}
 	}
-	defer redisClient.Close()
-	log.Println("✅ Connected to Redis")
 
 	// Initialize services
 	emailService := services.NewEmailService()

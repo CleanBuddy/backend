@@ -80,6 +80,11 @@ func (rl *RateLimiter) checkLimit(ctx context.Context, identifier string, authen
 		refillRate = 100
 	}
 
+	// If Redis is not available, use in-memory fallback
+	if rl.redisClient == nil {
+		return rl.checkLimitFallback(identifier, maxTokens, refillRate), nil
+	}
+
 	// Try Redis-based rate limiting first
 	key := fmt.Sprintf("ratelimit:%s", identifier)
 
